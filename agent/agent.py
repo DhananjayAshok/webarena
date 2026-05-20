@@ -125,7 +125,7 @@ class PromptAgent(Agent):
         lm_config = self.lm_config
         n = 0
         while True:
-            response = call_llm(lm_config, prompt)
+            response = call_llm(lm_config, prompt).replace("http://www.reddit.com/r/", "http://localhost:9999/f/")
             force_prefix = self.prompt_constructor.instruction[
                 "meta_data"
             ].get("force_prefix", "")
@@ -150,7 +150,6 @@ class PromptAgent(Agent):
                     action = create_none_action()
                     action["raw_prediction"] = response
                     break
-
         return action
 
     def reset(self, test_config_file: str) -> None:

@@ -145,8 +145,6 @@ def generate_from_openai_completion(
         raise ValueError(
             "OPENAI_API_KEY environment variable must be set when using OpenAI API."
         )
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    openai.organization = os.environ.get("OPENAI_ORGANIZATION", "")
     response = openai.Completion.create(  # type: ignore
         prompt=prompt,
         engine=engine,
@@ -245,15 +243,12 @@ def generate_from_openai_chat_completion(
     top_p: float,
     context_length: int,
     stop_token: str | None = None,
+    base_url: str | None = None,
+    api_key: str | None = None,
 ) -> str:
-    if "OPENAI_API_KEY" not in os.environ:
-        raise ValueError(
-            "OPENAI_API_KEY environment variable must be set when using OpenAI API."
-        )
-    openai.api_key = os.environ["OPENAI_API_KEY"]
-    openai.organization = os.environ.get("OPENAI_ORGANIZATION", "")
-
-    response = openai.ChatCompletion.create(  # type: ignore
+    # openai v0.27 supports api_base and api_key as per-call kwargs,
+    # so no global mutation is needed for vLLM or OpenRouter routing.
+    kwargs: dict = dict(
         model=model,
         messages=messages,
         temperature=temperature,
@@ -261,6 +256,11 @@ def generate_from_openai_chat_completion(
         top_p=top_p,
         stop=[stop_token] if stop_token else None,
     )
+    if base_url is not None:
+        kwargs["api_base"] = base_url
+    if api_key is not None:
+        kwargs["api_key"] = api_key
+    response = openai.ChatCompletion.create(**kwargs)  # type: ignore
     answer: str = response["choices"][0]["message"]["content"]
     return answer
 
